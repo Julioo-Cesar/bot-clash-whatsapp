@@ -2,8 +2,6 @@ require('dotenv').config();
 const venom = require('venom-bot');
 const axios = require('axios');
 
-const venom = require('venom-bot');
-
 venom
   .create()
   .then((client) => start(client))
