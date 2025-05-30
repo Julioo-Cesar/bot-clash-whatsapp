@@ -6,8 +6,8 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "baileys": "^5.0.0", 
     "axios": "^1.0.0",
+    "baileys": "^6.7.18",
     "dotenv": "^16.0.0"
   }
 }
