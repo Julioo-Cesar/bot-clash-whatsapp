@@ -3,6 +3,11 @@ const { Boom } = require('@hapi/boom');
 const axios = require('axios');
 const P = require('pino');
 
+axios.get('https://api.ipify.org?format=json').then(({data}) => {
+  console.log('Meu IP público:', data.ip);
+});
+
+
 const authFile = './auth_info.json';
 const { state, saveState } = useSingleFileAuthState(authFile);
 
