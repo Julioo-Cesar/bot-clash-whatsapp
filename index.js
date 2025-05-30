@@ -2,6 +2,26 @@ require('dotenv').config();
 const venom = require('venom-bot');
 const axios = require('axios');
 
+const venom = require('venom-bot');
+
+venom
+  .create()
+  .then((client) => start(client))
+  .catch((error) => {
+    console.log(error);
+  });
+
+function start(client) {
+  client.getAllChats().then((chats) => {
+    const groups = chats.filter(chat => chat.isGroup);
+    console.log("🔍 Grupos encontrados:");
+    groups.forEach(group => {
+      console.log(`📛 Nome: ${group.name} | ID: ${group.id}`);
+    });
+  });
+}
+
+
 const COC_TOKEN = process.env.COC_TOKEN;
 const CLAN_TAG = encodeURIComponent(process.env.CLAN_TAG);
 const INTERVAL_4H = 4 * 60 * 60 * 1000; // 4 horas em ms
