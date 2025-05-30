@@ -38,8 +38,7 @@ async function startSock() {
     }
     if (connection === "close") {
       const shouldReconnect =
-        (lastDisconnect?.error as Boom)?.output?.statusCode !==
-        DisconnectReason.loggedOut;
+        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
       console.log(
         "Conexão fechada, motivo:",
         lastDisconnect?.error,

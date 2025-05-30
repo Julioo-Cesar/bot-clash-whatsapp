@@ -1,11 +1,15 @@
 {
-  "name": "ip-checker",
+  "name": "bot-clash-whatsapp",
   "version": "1.0.0",
+  "description": "Bot de alerta de guerras e ligas do Clash of Clans via WhatsApp",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "concurrently \"node index.js\" \"node server.js\""
   },
   "dependencies": {
+    "@adiwajshing/baileys": "^6.7.1",
+    "@hapi/boom": "^11.1.4",
     "axios": "^1.6.8",
     "concurrently": "^9.1.2",
     "dotenv": "^16.5.0",
