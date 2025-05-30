@@ -1,37 +1,47 @@
-require('dotenv').config();
-const { default: makeWASocket, useSingleFileAuthState, DisconnectReason } = require('@adiwajshing/baileys');
+const { default: makeWASocket, useSingleFileAuthState } = require('@adiwajshing/baileys');
 const { Boom } = require('@hapi/boom');
-const fs = require('fs');
 
 const authFile = './auth_info.json';
 const { state, saveState } = useSingleFileAuthState(authFile);
 
-const startSock = () => {
+async function startBot() {
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: true,  // mostra QR no terminal
+    printQRInTerminal: true, // mostra QR code no terminal
   });
 
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
+
     if (qr) {
-      console.log('QR code recebido, escaneie:');
-      console.log(qr);
+      console.log('Escaneie este QR code pelo WhatsApp no celular:\n', qr);
     }
+
+    if (connection === 'open') {
+      console.log('✅ Conectado ao WhatsApp!');
+      listGroups(sock);
+    }
+
     if (connection === 'close') {
-      const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log('Conexão fechada devido a', lastDisconnect.error, ', tentando reconectar:', shouldReconnect);
+      const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log('⚠️ Conexão fechada. Reconectando?', shouldReconnect);
       if (shouldReconnect) {
-        startSock();
+        startBot();
+      } else {
+        console.log('Desconectado. Faça login novamente.');
       }
-    } else if (connection === 'open') {
-      console.log('Conectado ao WhatsApp!');
     }
   });
 
   sock.ev.on('creds.update', saveState);
+}
 
-  return sock;
-};
+async function listGroups(sock) {
+  const chats = await sock.groupFetchAllParticipating();
+  console.log('\n📋 Grupos encontrados:');
+  Object.values(chats).forEach(group => {
+    console.log(`Nome: ${group.subject} | ID: ${group.id}`);
+  });
+}
 
-startSock();
+startBot();
