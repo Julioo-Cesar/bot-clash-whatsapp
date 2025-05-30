@@ -3,21 +3,39 @@ const venom = require('venom-bot');
 const axios = require('axios');
 
 venom
-  .create()
+  .create({
+    session: 'nova-sessao',
+    headless: false, // <- torna visível o navegador
+    useChrome: true, // <- usa o Chrome local (se instalado)
+  })
   .then((client) => start(client))
   .catch((error) => {
-    console.log(error);
+    console.log("Erro ao iniciar o venom:", error);
   });
+
 
 function start(client) {
   client.getAllChats().then((chats) => {
     const groups = chats.filter(chat => chat.isGroup);
-    console.log("🔍 Grupos encontrados:");
+
+    if (groups.length === 0) {
+      console.log("❌ Nenhum grupo encontrado.");
+    } else {
+      console.log("🔍 Grupos encontrados:");
+    }
+
     groups.forEach(group => {
-      console.log(`📛 Nome: ${group.name} | ID: ${group.id}`);
+      const info = `📛 Nome: ${group.name}\n🆔 ID: ${group.id}`;
+      console.log(info);
+
+      // Envia a mensagem no grupo com o ID dele
+      client.sendText(group.id, `🤖 Olá! Aqui está o ID deste grupo:\n${group.id}`);
     });
+  }).catch(err => {
+    console.error("Erro ao buscar grupos:", err);
   });
 }
+
 
 
 const COC_TOKEN = process.env.COC_TOKEN;
