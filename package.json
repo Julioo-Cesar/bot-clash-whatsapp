@@ -7,7 +7,7 @@
     "start": "concurrently \"node index.js\" \"node server.js\""
   },
   "dependencies": {
-    "@adiwajshing/baileys": "git+https://github.com/adiwajshing/baileys.git",
+    "@adiwajshing/baileys": "^6.4.0",
     "@hapi/boom": "^10.0.1",
     "axios": "^1.6.8",
     "concurrently": "^9.1.2",
