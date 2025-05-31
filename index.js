@@ -37,8 +37,8 @@ async function startSock() {
       console.log(qr);
     }
     if (connection === "close") {
-      const shouldReconnect =
-        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
+        const shouldReconnect = statusCode !== 401; // 401 representa "loggedOut"
       console.log(
         "Conexão fechada, motivo:",
         lastDisconnect?.error,
