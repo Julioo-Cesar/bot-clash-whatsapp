@@ -32,13 +32,15 @@ async function startSock() {
 
   sock.ev.on("connection.update", (update) => {
     const { connection, lastDisconnect, qr } = update;
+
     if (qr) {
       console.log("QR code recebido, escaneie com seu WhatsApp:");
       console.log(qr);
     }
+
     if (connection === "close") {
-        const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const shouldReconnect = statusCode !== 401; // 401 representa "loggedOut"
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== 401;
       console.log(
         "Conexão fechada, motivo:",
         lastDisconnect?.error,
@@ -49,7 +51,7 @@ async function startSock() {
         startSock();
       }
     } else if (connection === "open") {
-      console.log("Conectado com sucesso!");
+      console.log("✅ Conectado com sucesso ao WhatsApp!");
       startMonitoring(sock);
     }
   });
@@ -66,16 +68,12 @@ async function checkClashData() {
     };
 
     const warRes = await axios.get(
-      `https://api.clashofclans.com/v1/clans/${encodeURIComponent(
-        CLAN_TAG
-      )}/currentwar`,
+      `https://api.clashofclans.com/v1/clans/${encodeURIComponent(CLAN_TAG)}/currentwar`,
       { headers }
     );
 
     const leagueRes = await axios.get(
-      `https://api.clashofclans.com/v1/clans/${encodeURIComponent(
-        CLAN_TAG
-      )}/currentwar/leaguegroup`,
+      `https://api.clashofclans.com/v1/clans/${encodeURIComponent(CLAN_TAG)}/currentwar/leaguegroup`,
       { headers }
     );
 
@@ -90,6 +88,7 @@ async function checkClashData() {
 }
 
 function formatTimeRemaining(ms) {
+  if (ms <= 0) return "tempo esgotado";
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -97,37 +96,37 @@ function formatTimeRemaining(ms) {
 }
 
 async function startMonitoring(sock) {
-  console.log("Iniciando monitoramento de guerra e liga...");
+  console.log("🛡️ Iniciando monitoramento de guerra e liga...");
 
   setInterval(async () => {
+    console.log(`[${new Date().toISOString()}] Verificando status do clã...`);
+
     const data = await checkClashData();
     if (!data) return;
 
     const now = Date.now();
 
+    // === GUERRA NORMAL ===
     if (data.war.state === "inWar") {
       if (!warActive) {
         warActive = true;
         warEndTime = new Date(data.war.endTime).getTime();
-        await sock.sendMessage(
-          WHATSAPP_GROUP_ID,
-          { text: `⚔️ Guerra começou! Termina em ${formatTimeRemaining(warEndTime - now)}` }
-        );
+        await sock.sendMessage(WHATSAPP_GROUP_ID, {
+          text: `⚔️ Guerra começou! Termina em ${formatTimeRemaining(warEndTime - now)}`,
+        });
       } else {
         const timeLeft = warEndTime - now;
 
         if (timeLeft > 3600000 && timeLeft % 14400000 < 300000) {
-          await sock.sendMessage(
-            WHATSAPP_GROUP_ID,
-            { text: `⏳ Guerra em andamento. Tempo restante: ${formatTimeRemaining(timeLeft)}` }
-          );
+          await sock.sendMessage(WHATSAPP_GROUP_ID, {
+            text: `⏳ Guerra em andamento. Tempo restante: ${formatTimeRemaining(timeLeft)}`,
+          });
         }
 
         if (timeLeft < 3600000 && timeLeft > 0) {
-          await sock.sendMessage(
-            WHATSAPP_GROUP_ID,
-            { text: `⚠️ Falta 1 hora para a guerra acabar!` }
-          );
+          await sock.sendMessage(WHATSAPP_GROUP_ID, {
+            text: `⚠️ Falta 1 hora para a guerra acabar!`,
+          });
           warEndTime = 0;
         }
       }
@@ -136,29 +135,29 @@ async function startMonitoring(sock) {
       warEndTime = null;
     }
 
-    if (data.league.state === "inWar") {
+    // === LIGA DE GUERRAS ===
+    const leagueState = data.league?.state || (Array.isArray(data.league?.rounds) ? "inWar" : null);
+
+    if (leagueState === "inWar") {
       if (!leagueActive) {
         leagueActive = true;
-        leagueEndTime = new Date(data.league.endTime).getTime();
-        await sock.sendMessage(
-          WHATSAPP_GROUP_ID,
-          { text: `🏆 Liga de Guerras começou! Termina em ${formatTimeRemaining(leagueEndTime - now)}` }
-        );
+        leagueEndTime = Date.now() + 24 * 60 * 60 * 1000; // Estimativa: 24h
+        await sock.sendMessage(WHATSAPP_GROUP_ID, {
+          text: `🏆 Liga de Guerras começou!`,
+        });
       } else {
         const timeLeft = leagueEndTime - now;
 
         if (timeLeft > 3600000 && timeLeft % 14400000 < 300000) {
-          await sock.sendMessage(
-            WHATSAPP_GROUP_ID,
-            { text: `⏳ Liga em andamento. Tempo restante: ${formatTimeRemaining(timeLeft)}` }
-          );
+          await sock.sendMessage(WHATSAPP_GROUP_ID, {
+            text: `⏳ Liga em andamento. Tempo restante (estimado): ${formatTimeRemaining(timeLeft)}`,
+          });
         }
 
         if (timeLeft < 3600000 && timeLeft > 0) {
-          await sock.sendMessage(
-            WHATSAPP_GROUP_ID,
-            { text: `⚠️ Falta 1 hora para a liga acabar!` }
-          );
+          await sock.sendMessage(WHATSAPP_GROUP_ID, {
+            text: `⚠️ Falta 1 hora para a liga acabar (estimado)!`,
+          });
           leagueEndTime = 0;
         }
       }
@@ -166,7 +165,7 @@ async function startMonitoring(sock) {
       leagueActive = false;
       leagueEndTime = null;
     }
-  }, 300000);
+  }, 300000); // 5 minutos
 }
 
 startSock();
